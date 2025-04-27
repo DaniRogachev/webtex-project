@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Login from './Login';
 import Register from './Register';
+import CalendarWithHourModal from './components/CalendarWithHourModal';
 
 const App: React.FC = () => {
   const [authenticated, setAuthenticated] = useState<boolean>(false);
@@ -8,7 +9,6 @@ const App: React.FC = () => {
   const [showRegister, setShowRegister] = useState(false);
 
   useEffect(() => {
-    // Check if the user is already authenticated (cookie exists)
     const checkAuth = async () => {
       try {
         const res = await fetch('http://localhost:3000/api/protected', {
@@ -51,7 +51,7 @@ const App: React.FC = () => {
     <div>
       <h1>Welcome to Meeting Scheduler!</h1>
       <p>You are logged in.</p>
-      {/* Main app content will go here */}
+      <CalendarWithHourModal />
     </div>
   );
 };
