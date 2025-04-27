@@ -1,0 +1,59 @@
+body {
+  font-family: Arial, sans-serif;
+  background: #f6f7fb;
+  margin: 0;
+  padding: 0;
+}
+.app-container {
+  max-width: 400px;
+  margin: 60px auto;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  padding: 32px 24px;
+}
+.auth-container {
+  display: flex;
+  flex-direction: column;
+}
+.auth-toggle {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+.auth-toggle button {
+  margin: 0 8px;
+  padding: 8px 24px;
+  border: none;
+  background: #ececec;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.auth-toggle button:disabled {
+  background: #007bff;
+  color: #fff;
+}
+input[type="text"], input[type="password"] {
+  margin-bottom: 16px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 16px;
+}
+button[type="submit"] {
+  padding: 10px 0;
+  background: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+}
+.error {
+  color: #d32f2f;
+  margin-top: 10px;
+}
+.success {
+  color: #388e3c;
+  margin-top: 10px;
+}
