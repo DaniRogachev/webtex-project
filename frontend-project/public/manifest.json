@@ -1,0 +1,8 @@
+{
+  "short_name": "Meeting Scheduler",
+  "name": "Meeting Scheduler - Doodle Clone",
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff"
+}
