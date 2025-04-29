@@ -11,15 +11,17 @@ const App: React.FC = () => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await fetch('http://localhost:3000/api/protected', {
+        const res = await fetch('http://localhost:3000/api/currentUser', {
           method: 'GET',
           credentials: 'include',
         });
         if (res.ok) {
           setAuthenticated(true);
+        } else {
+          setAuthenticated(false);
         }
       } catch (e) {
-        // Not authenticated
+        setAuthenticated(false);
       } finally {
         setLoading(false);
       }
@@ -47,11 +49,20 @@ const App: React.FC = () => {
     );
   }
 
+  const handleLogout = async () => {
+    await fetch('http://localhost:3000/api/logout', {
+      method: 'POST',
+      credentials: 'include',
+    });
+    setAuthenticated(false);
+  };
+
   return (
     <div>
       <h1>Welcome to Meeting Scheduler!</h1>
       <p>You are logged in.</p>
       <CalendarWithHourModal />
+      <button onClick={handleLogout} style={{ marginTop: '1rem' }}>Logout</button>
     </div>
   );
 };

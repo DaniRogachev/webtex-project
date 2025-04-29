@@ -54,6 +54,16 @@ app.post('/api/login', async (req, res) => {
   res.json({ message: 'Login successful' });
 });
 
+// Logout endpoint
+app.post('/api/logout', (req, res) => {
+  res.clearCookie('token', {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: false, // Set to true if using HTTPS
+  });
+  res.json({ message: 'Logged out' });
+});
+
 // Middleware to protect routes
 function authenticateToken(req, res, next) {
   const token = req.cookies.token;
@@ -68,6 +78,10 @@ function authenticateToken(req, res, next) {
 // Example protected route
 app.get('/api/protected', authenticateToken, (req, res) => {
   res.json({ message: `Hello, ${req.user.username}!` });
+});
+
+app.get('/api/currentUser', authenticateToken, (req, res) => {
+  res.json({ username: req.user.username });
 });
 
 app.listen(PORT, () => {
