@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import authRoutes from './routes/auth.js';
+import meetingRoutes from './routes/meetings.js';
 
 const app = express();
 const PORT = 3000;
@@ -13,8 +14,8 @@ app.use(cors({
 }));
 app.use(cookieParser());
 
-// Mount auth routes
 app.use('/api', authRoutes);
+app.use('/api/meetings', meetingRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

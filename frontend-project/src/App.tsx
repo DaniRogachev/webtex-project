@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './Login';
 import Register from './Register';
+import Home from './Home';
+import MeetingInfo from './MeetingInfo';
 import CalendarWithHourModal from './components/CalendarWithHourModal';
 
 const App: React.FC = () => {
@@ -33,22 +36,6 @@ const App: React.FC = () => {
     return <div>Loading...</div>;
   }
 
-  if (!authenticated) {
-    return (
-      <div className="app-container">
-        <div className="auth-toggle">
-          <button onClick={() => setShowRegister(false)} disabled={!showRegister}>Login</button>
-          <button onClick={() => setShowRegister(true)} disabled={showRegister}>Register</button>
-        </div>
-        {showRegister ? (
-          <Register onAuthSuccess={() => setAuthenticated(true)} />
-        ) : (
-          <Login onAuthSuccess={() => setAuthenticated(true)} />
-        )}
-      </div>
-    );
-  }
-
   const handleLogout = async () => {
     await fetch('http://localhost:3000/api/logout', {
       method: 'POST',
@@ -58,12 +45,42 @@ const App: React.FC = () => {
   };
 
   return (
-    <div>
-      <h1>Welcome to Meeting Scheduler!</h1>
-      <p>You are logged in.</p>
-      <CalendarWithHourModal />
-      <button onClick={handleLogout} style={{ marginTop: '1rem' }}>Logout</button>
-    </div>
+    <Router>
+      <Routes>
+        <Route 
+          path="/" 
+          element={
+            authenticated ? (
+              <Navigate to="/home" replace />
+            ) : (
+              <div className="app-container">
+                <div className="auth-toggle">
+                  <button onClick={() => setShowRegister(false)} disabled={!showRegister}>Login</button>
+                  <button onClick={() => setShowRegister(true)} disabled={showRegister}>Register</button>
+                </div>
+                {showRegister ? (
+                  <Register onAuthSuccess={() => setAuthenticated(true)} />
+                ) : (
+                  <Login onAuthSuccess={() => setAuthenticated(true)} />
+                )}
+              </div>
+            )
+          } 
+        />
+        <Route 
+          path="/home" 
+          element={authenticated ? (
+            <div>
+              <Home />
+            </div>
+          ) : <Navigate to="/" replace />} 
+        />
+        <Route 
+          path="/meeting/:id" 
+          element={authenticated ? <MeetingInfo /> : <Navigate to="/" replace />} 
+        />
+      </Routes>
+    </Router>
   );
 };
 
