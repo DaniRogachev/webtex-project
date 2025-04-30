@@ -1,0 +1,33 @@
+{
+    "_id": "m_54902",
+    "creator_id": "u_001",
+    "title": "Example meeting",
+    "description": "example description",
+    "range": {           
+      "start": "2025-05-05T07:00:00Z",
+      "end":   "2025-05-07T09:00:00Z"
+    },
+    "slot_length_min": 60,
+  
+    "participants": [    
+      { "user_id": "u_001", "status": "accepted", "responded_at": "2025-04-28T12:00:00Z" },
+      { "user_id": "u_002", "status": "invited"  },
+      { "user_id": "u_003", "status": "declined" }
+    ],
+  
+    "time_slots": [      
+      {
+        "slot_id": "m_54902_s1",
+        "start": "2025-05-05T07:00:00Z",
+        "end":   "2025-05-05T08:00:00Z",
+        "votes": [ "u_002" ]            
+      },
+      {
+        "slot_id": "m_54902_s2",
+        "start": "2025-05-05T14:00:00Z",
+        "end":   "2025-05-05T15:00:00Z",
+        "votes": [ "u_001", "u_002" ]
+      }
+    ]
+  }
+  
