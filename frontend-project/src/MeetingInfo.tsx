@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import VoteResultsTable from './components/VoteResultsTable';
 
 interface Meeting {
   id: string;
@@ -11,10 +12,35 @@ interface Meeting {
   createdAt: string;
 }
 
+interface Vote {
+  id: string;
+  meetingId: string;
+  username: string;
+  date: string;
+  hour: number;
+  minute: number;
+  createdAt: string;
+}
+
+interface VoteResult {
+  date: string;
+  hour: number;
+  minute: number;
+  count: number;
+}
+
+interface MeetingResponse {
+  meeting: Meeting;
+  votes: Vote[];
+  results: VoteResult[];
+}
+
 const MeetingInfo: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [meeting, setMeeting] = useState<Meeting | null>(null);
+  const [votes, setVotes] = useState<Vote[]>([]);
+  const [results, setResults] = useState<VoteResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,8 +66,10 @@ const MeetingInfo: React.FC = () => {
           }
         }
         
-        const data = await res.json();
+        const data: MeetingResponse = await res.json();
         setMeeting(data.meeting);
+        setVotes(data.votes);
+        setResults(data.results);
         setError(null);
       } catch (err: any) {
         setError(err.message || 'Failed to load meeting details');
@@ -133,6 +161,16 @@ const MeetingInfo: React.FC = () => {
           <h3 style={{ marginBottom: '5px' }}>Created At</h3>
           <p>{new Date(meeting.createdAt).toLocaleString()}</p>
         </div>
+      </div>
+
+      {/* Vote Results Section */}
+      <div className="vote-results-section" style={{ 
+        backgroundColor: '#f9f9f9', 
+        padding: '20px', 
+        borderRadius: '8px',
+        marginTop: '20px'
+      }}>
+        <VoteResultsTable results={results} />
       </div>
     </div>
   );
