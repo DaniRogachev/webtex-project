@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Login from './Login';
 import Register from './Register';
 import Home from './Home';
@@ -14,6 +14,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        setLoading(true);
         const res = await fetch('http://localhost:3000/api/currentUser', {
           method: 'GET',
           credentials: 'include',
@@ -36,14 +37,7 @@ const App: React.FC = () => {
     return <div>Loading...</div>;
   }
 
-  const handleLogout = async () => {
-    await fetch('http://localhost:3000/api/logout', {
-      method: 'POST',
-      credentials: 'include',
-    });
-    setAuthenticated(false);
-  };
-
+  // Instead of a separate handleLogout function, we'll handle logout directly in Home
   return (
     <Router>
       <Routes>
@@ -69,15 +63,16 @@ const App: React.FC = () => {
         />
         <Route 
           path="/home" 
-          element={authenticated ? (
-            <div>
-              <Home />
-            </div>
-          ) : <Navigate to="/" replace />} 
+          element={authenticated ? <Home setAuthenticated={setAuthenticated} /> : <Navigate to="/" replace />} 
         />
         <Route 
           path="/meeting/:id" 
           element={authenticated ? <MeetingInfo /> : <Navigate to="/" replace />} 
+        />
+        {/* Add a catch-all route to redirect to home or login depending on auth state */}
+        <Route 
+          path="*" 
+          element={authenticated ? <Navigate to="/home" replace /> : <Navigate to="/" replace />} 
         />
       </Routes>
     </Router>

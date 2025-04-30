@@ -22,9 +22,19 @@ router.post('/', authenticateToken, (req: AuthenticatedRequest, res: Response): 
   
   const start = new Date(startDate);
   const end = new Date(endDate);
+  const now = new Date();
+  
+  // Set time to beginning of the day for proper comparison
+  now.setHours(0, 0, 0, 0);
   
   if (isNaN(start.getTime()) || isNaN(end.getTime())) {
     res.status(400).json({ message: 'Invalid date format. Use ISO 8601 format.' });
+    return;
+  }
+  
+  // Check if start date is in the past
+  if (start < now) {
+    res.status(400).json({ message: 'Cannot schedule meetings in the past. Start date must be today or later.' });
     return;
   }
   

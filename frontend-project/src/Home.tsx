@@ -11,7 +11,11 @@ interface Meeting {
   createdAt: string;
 }
 
-const Home: React.FC = () => {
+interface HomeProps {
+  setAuthenticated: (value: boolean) => void;
+}
+
+const Home: React.FC<HomeProps> = ({ setAuthenticated }) => {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -60,6 +64,7 @@ const Home: React.FC = () => {
       method: 'POST',
       credentials: 'include',
     });
+    setAuthenticated(false); // Update auth state in parent component
     navigate('/');
   };
 
