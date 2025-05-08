@@ -11,25 +11,17 @@ A simple demo project showing how to use Prisma ORM with Express, including CRUD
 ## Setup
 
 1. **Install dependencies:**
-   ```bash
    npm install
-   ```
 
 2. **Initialize Prisma and run migrations:**
-   ```bash
    npx prisma migrate dev --name init
    npx prisma generate
-   ```
 
 3. **Seed the database:**
-   ```bash
    npm run prisma:seed
-   ```
 
 4. **Start the server:**
-   ```bash
    npm run dev
-   ```
 
 ## API Endpoints
 

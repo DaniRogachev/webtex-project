@@ -13,7 +13,7 @@ app.get('/users', async (req: Request, res: Response) => {
 });
 
 app.get('/users/:id', async (req: Request, res: Response) => {
-  const user = await prisma.user.findUnique({ where: { id: Number(req.params.id) } });
+  const user = await prisma.user.findUnique({ where: { id: req.params.id } });
   if (user) res.json(user);
   else res.status(404).json({ error: 'User not found' });
 });
@@ -32,7 +32,7 @@ app.put('/users/:id', async (req: Request, res: Response) => {
   const { name, email } = req.body;
   try {
     const user = await prisma.user.update({
-      where: { id: Number(req.params.id) },
+      where: { id: req.params.id },
       data: { name, email },
     });
     res.json(user);
@@ -43,8 +43,8 @@ app.put('/users/:id', async (req: Request, res: Response) => {
 
 app.delete('/users/:id', async (req: Request, res: Response) => {
   try {
-    await prisma.user.delete({ where: { id: Number(req.params.id) } });
-    res.json({ message: 'User deleted' });
+    await prisma.user.delete({ where: { id: req.params.id } });
+    res.status(204).send();
   } catch (e) {
     res.status(404).json({ error: 'User not found' });
   }
