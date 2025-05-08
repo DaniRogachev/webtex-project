@@ -1,3 +1,4 @@
 frontend-project/node_modules
 backend-project/node_modules
+express-prisma-demo/node_modules
 .DS_Store
