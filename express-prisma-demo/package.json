@@ -11,12 +11,12 @@
     "prisma:seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
-    "@prisma/client": "latest",
+    "@prisma/client": "^6.8.1",
     "express": "latest"
   },
   "devDependencies": {
     "@types/express": "^5.0.1",
-    "prisma": "latest",
+    "prisma": "^6.8.1",
     "ts-node": "latest",
     "ts-node-dev": "latest",
     "typescript": "latest"

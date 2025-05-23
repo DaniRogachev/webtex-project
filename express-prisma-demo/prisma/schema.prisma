@@ -1,5 +1,4 @@
 // Prisma schema file
-// SQLite for demo
 
 datasource db {
   provider = "mongodb"

@@ -14,28 +14,28 @@ app.get('/users', async (req, res) => {
     res.json(users);
 });
 app.get('/users/:id', async (req, res) => {
-    const user = await prisma.user.findUnique({ where: { id: Number(req.params.id) } });
+    const user = await prisma.user.findUnique({ where: { id: req.params.id } });
     if (user)
         res.json(user);
     else
         res.status(404).json({ error: 'User not found' });
 });
 app.post('/users', async (req, res) => {
-    const { name, email } = req.body;
+    const { name, email, age, height } = req.body;
     try {
-        const user = await prisma.user.create({ data: { name, email } });
+        const user = await prisma.user.create({ data: { name, email, age, height } });
         res.status(201).json(user);
     }
     catch (e) {
-        res.status(400).json({ error: 'Email must be unique' });
+        res.status(400).json({ error: 'Cannot create user' });
     }
 });
 app.put('/users/:id', async (req, res) => {
-    const { name, email } = req.body;
+    const { name, email, age, height } = req.body;
     try {
         const user = await prisma.user.update({
-            where: { id: Number(req.params.id) },
-            data: { name, email },
+            where: { id: req.params.id },
+            data: { name, email, age, height },
         });
         res.json(user);
     }
@@ -45,8 +45,8 @@ app.put('/users/:id', async (req, res) => {
 });
 app.delete('/users/:id', async (req, res) => {
     try {
-        await prisma.user.delete({ where: { id: Number(req.params.id) } });
-        res.json({ message: 'User deleted' });
+        await prisma.user.delete({ where: { id: req.params.id } });
+        res.status(204).send();
     }
     catch (e) {
         res.status(404).json({ error: 'User not found' });
