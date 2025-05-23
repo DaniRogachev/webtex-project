@@ -5,6 +5,13 @@ Prisma uses objects to define its queries which provides storng type safety but 
 ## Examples
 
 ### Query wrappers
+
+- You can strongly define the query that is going to be executed
+- You have the freedom of not defining the querry object
+- You can pass the query object and build it gradually. 
+- There are no interpolated strings
+
+
 type SpecificUserQuery = {
   where: {
     age: { gte: number };
@@ -30,6 +37,19 @@ async function usersWithWhere(whereQuery: SpecificUserQuery): Promise<UserSummar
 }
 
 
+async function filterUsersKnex(knex: Knex, params: FilterParams) {
+  let query = knex('users');
+
+  if (params.age) {
+    query = query.where('age', params.age);
+  }
+
+  if (params.nameContains) {
+    query = query.where('name', 'like', `%${params.nameContains}%`);
+  }
+
+  return await query.select();
+}
 
 ### Heavily nested objects
 where: {
