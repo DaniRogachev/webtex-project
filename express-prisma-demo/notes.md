@@ -11,7 +11,7 @@ Prisma uses objects to define its queries which provides storng type safety but 
 - You can pass the query object and build it gradually. 
 - There are no interpolated strings
 
-
+```ts
 type SpecificUserQuery = {
   where: {
     age: { gte: number };
@@ -50,23 +50,28 @@ async function filterUsersKnex(knex: Knex, params: FilterParams) {
 
   return await query.select();
 }
+```
 
 ### Heavily nested objects
-where: {
-  AND: [
-    { name: { contains: "John" } },
-    {
-      posts: {
-        some: {
-          published: true,
-        },
-      },
-    },
-  ],
+```ts
+{
+    where: {
+        AND: [
+            { name: { contains: "John" } },
+            {
+            posts: {
+                some: {
+                published: true,
+                },
+            },
+            },
+        ],
+    }
 }
+```
 
 ### Raw queries
-
+```ts
 async function getPublishedPostsWithAuthors(limit: number, offset: number): Promise<PostWithAuthor[]> {
   const result = await prisma.$queryRaw<PostWithAuthor[]>`
     SELECT 
@@ -85,4 +90,4 @@ async function getPublishedPostsWithAuthors(limit: number, offset: number): Prom
 
   return result;
 }
-
+```
