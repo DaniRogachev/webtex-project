@@ -71,7 +71,7 @@ const App: React.FC = () => {
           path="/home" 
           element={authenticated ? (
             <div>
-              <Home />
+              <Home onLogout={handleLogout} />
             </div>
           ) : <Navigate to="/" replace />} 
         />

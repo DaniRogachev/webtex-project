@@ -8,6 +8,10 @@ interface Participator {
   responded_at?: string;
 }
 
+interface HomeProps {
+  onLogout: () => Promise<void>;
+}
+
 interface Meeting {
   id: string;
   title: string;
@@ -19,7 +23,7 @@ interface Meeting {
   participators: Participator[];
 }
 
-const Home: React.FC = () => {
+const Home: React.FC<HomeProps> = ({ onLogout }) => {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [invites, setInvites] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
@@ -113,11 +117,7 @@ const Home: React.FC = () => {
   };
 
   const handleLogout = async () => {
-    await fetch('http://localhost:3000/api/logout', {
-      method: 'POST',
-      credentials: 'include',
-    });
-    navigate('/');
+    await onLogout();
   };
 
   const handleRespondToInvite = async (meetingId: string, accept: boolean) => {
