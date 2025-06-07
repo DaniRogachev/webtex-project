@@ -4,9 +4,10 @@ import jwt from 'jsonwebtoken';
 import { ObjectId } from 'mongodb';
 import { authenticateToken, AuthenticatedRequest } from '../middlewares/authenticateToken.js';
 import { getUsersCollection } from '../db/index.js';
+import { AUTH_CONFIG } from '../config/auth.js';
 
 const router: Router = express.Router();
-const JWT_SECRET = 'your_jwt_secret';
+const JWT_SECRET = AUTH_CONFIG.jwtSecret;
 
 
 router.post('/register', async (req: Request, res: Response): Promise<void> => {

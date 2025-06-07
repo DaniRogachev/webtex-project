@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { AUTH_CONFIG } from '../config/auth.js';
 
-const JWT_SECRET = 'your_jwt_secret';
+const JWT_SECRET = AUTH_CONFIG.jwtSecret;
 
 // Extend Express Request to include user
 export interface AuthenticatedRequest extends Request {
