@@ -3,8 +3,11 @@ import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 
 interface CalendarWithHourModalProps {
-  startDate?: Date;
-  endDate?: Date;
+  startDate: string;
+  endDate: string;
+  meetingId: string;
+  onVoteSuccess?: () => void;
+  existingVotes?: Vote[];
 }
 
 interface HourModalProps {
@@ -87,16 +90,34 @@ const modalStyle: React.CSSProperties = {
   boxShadow: '0 2px 12px rgba(0,0,0,0.2)',
 };
 
-const CalendarWithHourModal: React.FC<CalendarWithHourModalProps> = ({ startDate, endDate }) => {
+export interface Vote {
+  id: string;
+  meetingId: string;
+  username: string;
+  date: string;
+  hour: number;
+  minute: number;
+  createdAt: string;
+}
+
+const CalendarWithHourModal: React.FC<CalendarWithHourModalProps> = ({ 
+  startDate, 
+  endDate, 
+  meetingId, 
+  onVoteSuccess, 
+  existingVotes = [] 
+}) => {
   const now = new Date();
   const todayStart = new Date(now);
   todayStart.setHours(0, 0, 0, 0);
-  const minDateTime = startDate ? new Date(startDate) : todayStart;
-  const maxDateTime = endDate ? new Date(endDate) : undefined;
+  const minDateTime = new Date(startDate);
+  const maxDateTime = new Date(endDate);
 
   const [selectedDate, setSelectedDate] = React.useState<Date | null>(null);
   const [showModal, setShowModal] = React.useState(false);
   const [chosenDates, setChosenDates] = React.useState<{ date: Date; hour: number; minute: number }[]>([]);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [submissionError, setSubmissionError] = React.useState<string | null>(null);
 
   const handleDateClick = (date: Date) => {
     setSelectedDate(date);
@@ -136,8 +157,71 @@ const CalendarWithHourModal: React.FC<CalendarWithHourModalProps> = ({ startDate
     minDateTimeForModal = minAllowed;
   }
 
+  // Add a function to handle vote submission
+  const handleSubmitVotes = async () => {
+    if (chosenDates.length === 0) {
+      setSubmissionError('Please select at least one date and time');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmissionError(null);
+    
+    try {
+      // Submit each vote separately
+      for (const vote of chosenDates) {
+        const dateString = vote.date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+        
+        const response = await fetch(`http://localhost:3000/api/meetings/${meetingId}/vote`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            date: dateString,
+            hour: vote.hour,
+            minute: vote.minute
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || `Error: ${response.status}`);
+        }
+      }
+      
+      // Clear selected dates after successful submission
+      setChosenDates([]);
+      
+      // Call the success callback if provided
+      if (onVoteSuccess) {
+        onVoteSuccess();
+      }
+    } catch (error: any) {
+      setSubmissionError(error.message || 'Failed to submit votes');
+      console.error('Vote submission error:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Display already voted times if provided
+  React.useEffect(() => {
+    if (existingVotes && existingVotes.length > 0) {
+      // Just for display purposes - we don't want to submit these again
+      const existingVoteDates = existingVotes.map(vote => {
+        const date = new Date(vote.date);
+        return { date, hour: vote.hour, minute: vote.minute };
+      });
+    }
+  }, [existingVotes]);
+
   return (
-    <div style={{ maxWidth: 400, margin: '40px auto', textAlign: 'center' }}>
+    <div style={{ maxWidth: 400, margin: '20px auto', textAlign: 'center', padding: '15px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
+      <h3>Vote for Meeting Times</h3>
+      <p>Select dates and times that work for you.</p>
+      
       <Calendar
         onClickDay={handleDateClick}
         minDate={minDateTime}
@@ -154,14 +238,51 @@ const CalendarWithHourModal: React.FC<CalendarWithHourModalProps> = ({ startDate
       )}
       {chosenDates.length > 0 && (
         <div style={{ marginTop: 24, fontSize: 18, textAlign: 'left' }}>
-          <strong>Selected Dates:</strong>
+          <strong>Selected Times:</strong>
           <ul style={{ listStyle: 'none', padding: 0 }}>
             {chosenDates.map((item, idx) => (
-              <li key={item.date.toISOString()} style={{ marginBottom: 8, display: 'flex', alignItems: 'center' }}>
+              <li key={`${item.date.toISOString()}-${item.hour}-${item.minute}`} style={{ marginBottom: 8, display: 'flex', alignItems: 'center' }}>
                 <span style={{ flex: 1 }}>
                   {item.date.toLocaleDateString()} at {item.hour.toString().padStart(2, '0')}:{item.minute.toString().padStart(2, '0')} ({Intl.DateTimeFormat().resolvedOptions().timeZone})
                 </span>
                 <button onClick={() => handleRemove(idx)} style={{ marginLeft: 8, color: '#d32f2f', background: 'none', border: 'none', cursor: 'pointer' }}>Remove</button>
+              </li>
+            ))}
+          </ul>
+          
+          <div style={{ marginTop: 16, textAlign: 'center' }}>
+            <button 
+              onClick={handleSubmitVotes}
+              disabled={isSubmitting}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#4CAF50',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                opacity: isSubmitting ? 0.7 : 1
+              }}
+            >
+              {isSubmitting ? 'Submitting...' : 'Submit Votes'}
+            </button>
+          </div>
+          
+          {submissionError && (
+            <div style={{ color: '#d32f2f', marginTop: 8, textAlign: 'center' }}>
+              {submissionError}
+            </div>
+          )}
+        </div>
+      )}
+      
+      {existingVotes && existingVotes.length > 0 && (
+        <div style={{ marginTop: 24, fontSize: 18, textAlign: 'left', borderTop: '1px solid #ddd', paddingTop: 16 }}>
+          <strong>Your Current Votes:</strong>
+          <ul style={{ listStyle: 'none', padding: 0 }}>
+            {existingVotes.map(vote => (
+              <li key={vote.id} style={{ marginBottom: 8 }}>
+                {new Date(vote.date).toLocaleDateString()} at {vote.hour.toString().padStart(2, '0')}:{vote.minute.toString().padStart(2, '0')}
               </li>
             ))}
           </ul>
