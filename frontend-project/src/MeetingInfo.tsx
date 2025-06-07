@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import VoteResultsTable from './components/VoteResultsTable';
+import CalendarWithHourModal, { Vote as VoteType } from './components/CalendarWithHourModal';
 
 interface Participator {
   username: string;
@@ -19,15 +20,8 @@ interface Meeting {
   participators: Participator[];
 }
 
-interface Vote {
-  id: string;
-  meetingId: string;
-  username: string;
-  date: string;
-  hour: number;
-  minute: number;
-  createdAt: string;
-}
+// We'll use the VoteType from CalendarWithHourModal component
+type Vote = VoteType;
 
 interface VoteResult {
   date: string;
@@ -56,23 +50,42 @@ const MeetingInfo: React.FC = () => {
   const [usernameToInvite, setUsernameToInvite] = useState('');
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showVotingModal, setShowVotingModal] = useState(false);
+  const [userVotes, setUserVotes] = useState<Vote[]>([]);
+  const [userStatus, setUserStatus] = useState<'accepted' | 'invited' | 'declined' | null>(null);
 
   useEffect(() => {
     fetchCurrentUser();
     fetchMeetingDetails();
   }, [id]);
   
-  // Check if current user is the creator whenever username or meeting changes
+  // Check if current user is the creator and get participation status whenever username or meeting changes
   useEffect(() => {
     if (meeting && currentUsername) {
       setIsCreator(meeting.createdBy === currentUsername);
-      console.log('Creator check:', { 
+      
+      // Find user status in participants
+      const userParticipation = meeting.participators.find(p => p.username === currentUsername);
+      if (userParticipation) {
+        setUserStatus(userParticipation.status as 'accepted' | 'invited' | 'declined');
+      } else {
+        setUserStatus(null);
+      }
+      
+      console.log('User details:', { 
         meetingCreator: meeting.createdBy, 
         currentUser: currentUsername, 
-        isCreator: meeting.createdBy === currentUsername 
+        isCreator: meeting.createdBy === currentUsername,
+        userStatus: userParticipation?.status
       });
+      
+      // Filter votes for current user
+      if (votes.length > 0) {
+        const currentUserVotes = votes.filter(vote => vote.username === currentUsername);
+        setUserVotes(currentUserVotes);
+      }
     }
-  }, [meeting, currentUsername]);
+  }, [meeting, currentUsername, votes]);
   
   const fetchCurrentUser = async () => {
     try {
@@ -124,6 +137,12 @@ const MeetingInfo: React.FC = () => {
       setError(null);
       
       // Note: We now handle the creator check in a separate useEffect
+      
+      // Extract user votes
+      if (votes.length > 0 && currentUsername) {
+        const currentUserVotes = votes.filter(vote => vote.username === currentUsername);
+        setUserVotes(currentUserVotes);
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to load meeting details');
       console.error(err);
@@ -322,6 +341,68 @@ const MeetingInfo: React.FC = () => {
         </div>
       </div>
 
+      {/* Voting Section */}
+      <div className="voting-section" style={{ 
+        backgroundColor: '#f9f9f9', 
+        padding: '20px', 
+        borderRadius: '8px',
+        marginTop: '20px'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+          <h2>Your Votes</h2>
+          {userStatus === 'accepted' && (
+            <button
+              onClick={() => setShowVotingModal(!showVotingModal)}
+              style={{ 
+                padding: '8px 16px', 
+                backgroundColor: '#2196F3', 
+                color: 'white', 
+                border: 'none',
+                borderRadius: '4px', 
+                cursor: 'pointer'
+              }}
+            >
+              {showVotingModal ? 'Hide Voting' : 'Vote for Times'}
+            </button>
+          )}
+        </div>
+        
+        {userStatus !== 'accepted' ? (
+          <div style={{ padding: '15px', backgroundColor: '#fff3e0', borderRadius: '4px', borderLeft: '4px solid #ff9800' }}>
+            <p style={{ margin: '0' }}>
+              <strong>Note:</strong> You need to accept the invitation to this meeting before you can vote for times.
+              {userStatus === 'invited' && ' Please check your invitations on the home page.'}
+              {userStatus === 'declined' && ' You previously declined this meeting. Please contact the organizer if you want to participate.'}
+            </p>
+          </div>
+        ) : showVotingModal && meeting ? (
+          <CalendarWithHourModal
+            startDate={meeting.startDate}
+            endDate={meeting.endDate}
+            meetingId={meeting.id}
+            onVoteSuccess={fetchMeetingDetails}
+            existingVotes={userVotes}
+          />
+        ) : (
+          <div>
+            {userVotes.length > 0 ? (
+              <div>
+                <p>You have voted for the following times:</p>
+                <ul style={{ listStyle: 'none', padding: 0 }}>
+                  {userVotes.map(vote => (
+                    <li key={vote.id} style={{ marginBottom: '10px', padding: '10px', borderRadius: '4px', backgroundColor: '#e3f2fd' }}>
+                      {new Date(vote.date).toLocaleDateString()} at {vote.hour.toString().padStart(2, '0')}:{vote.minute.toString().padStart(2, '0')}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <p>You haven't voted for any times yet. Click 'Vote for Times' to add your availability.</p>
+            )}
+          </div>
+        )}
+      </div>
+      
       {/* Participants Section */}
       <div className="participants-section" style={{ 
         backgroundColor: '#f9f9f9', 
