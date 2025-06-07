@@ -53,10 +53,44 @@ const App: React.FC = () => {
             authenticated ? (
               <Navigate to="/home" replace />
             ) : (
-              <div className="app-container">
-                <div className="auth-toggle">
-                  <button onClick={() => setShowRegister(false)} disabled={!showRegister}>Login</button>
-                  <button onClick={() => setShowRegister(true)} disabled={showRegister}>Register</button>
+              <div className="app-container" style={{ maxWidth: '400px', margin: '0 auto', padding: '20px' }}>
+                <div className="auth-toggle" style={{ 
+                  display: 'flex', 
+                  marginBottom: '20px',
+                  width: '100%' 
+                }}>
+                  <button 
+                    onClick={() => setShowRegister(false)} 
+                    disabled={!showRegister}
+                    style={{
+                      flex: 1,
+                      padding: '10px',
+                      backgroundColor: !showRegister ? '#239AE4' : '#f1f1f1',
+                      color: !showRegister ? 'white' : '#333',
+                      border: 'none',
+                      borderRadius: '4px 0 0 4px',
+                      cursor: 'pointer',
+                      fontWeight: !showRegister ? 'bold' : 'normal'
+                    }}
+                  >
+                    Login
+                  </button>
+                  <button 
+                    onClick={() => setShowRegister(true)} 
+                    disabled={showRegister}
+                    style={{
+                      flex: 1,
+                      padding: '10px',
+                      backgroundColor: showRegister ? '#239AE4' : '#f1f1f1',
+                      color: showRegister ? 'white' : '#333',
+                      border: 'none',
+                      borderRadius: '0 4px 4px 0',
+                      cursor: 'pointer',
+                      fontWeight: showRegister ? 'bold' : 'normal'
+                    }}
+                  >
+                    Register
+                  </button>
                 </div>
                 {showRegister ? (
                   <Register onAuthSuccess={() => setAuthenticated(true)} />
