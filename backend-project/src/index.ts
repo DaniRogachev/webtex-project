@@ -3,6 +3,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import authRoutes from './routes/auth.js';
 import meetingRoutes from './routes/meetings.js';
+import usersRoutes from './routes/users.js';
 import { connectToDatabase } from './db/index.js';
 import { initializeDatabase } from './db/init-db.js';
 
@@ -18,6 +19,7 @@ app.use(cookieParser());
 
 app.use('/api', authRoutes);
 app.use('/api/meetings', meetingRoutes);
+app.use('/api/users', usersRoutes);
 
 // Initialize and connect to MongoDB before starting the server
 initializeDatabase()

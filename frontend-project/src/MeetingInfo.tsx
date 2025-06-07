@@ -47,8 +47,15 @@ const MeetingInfo: React.FC = () => {
   const [currentUsername, setCurrentUsername] = useState<string>('');
   const [isCreator, setIsCreator] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
-  const [usernameToInvite, setUsernameToInvite] = useState('');
+  const [userSearch, setUserSearch] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
+  const [availableUsers, setAvailableUsers] = useState<string[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  
+  // References for handling clicks outside suggestion dropdown
+  const suggestionsRef = React.useRef<HTMLDivElement>(null);
+  const searchInputRef = React.useRef<HTMLInputElement>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showVotingModal, setShowVotingModal] = useState(false);
   const [userVotes, setUserVotes] = useState<Vote[]>([]);
@@ -57,6 +64,7 @@ const MeetingInfo: React.FC = () => {
   useEffect(() => {
     fetchCurrentUser();
     fetchMeetingDetails();
+    fetchAvailableUsers();
   }, [id]);
   
   // Check if current user is the creator and get participation status whenever username or meeting changes
@@ -201,10 +209,79 @@ const MeetingInfo: React.FC = () => {
     }
   };
   
+  const fetchAvailableUsers = async () => {
+    try {
+      setLoadingUsers(true);
+      const res = await fetch('http://localhost:3000/api/users', {
+        method: 'GET',
+        credentials: 'include',
+      });
+      
+      if (!res.ok) {
+        throw new Error(`Error ${res.status}: ${res.statusText}`);
+      }
+      
+      const users: string[] = await res.json();
+      setAvailableUsers(users);
+    } catch (err) {
+      console.error('Failed to fetch users:', err);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+  
+  // Effect to handle clicks outside the suggestion dropdown
+  React.useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        suggestionsRef.current && 
+        !suggestionsRef.current.contains(event.target as Node) &&
+        searchInputRef.current &&
+        !searchInputRef.current.contains(event.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+  
+  // Filter available users based on search input
+  const getFilteredUsers = () => {
+    if (!userSearch.trim()) return [];
+    
+    return availableUsers
+      .filter(user => 
+        user.toLowerCase().includes(userSearch.toLowerCase()) && 
+        // Don't show users who are already participants
+        !meeting?.participators.some(p => p.username === user)
+      )
+      .slice(0, 5); // Limit to 5 suggestions for better UI
+  };
+  
+  // Handle the form submission to invite the user
   const handleInviteUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!id || !usernameToInvite.trim()) {
+    const username = userSearch;
+    if (!id || !username.trim()) {
       setInviteError('Please enter a username');
+      return;
+    }
+    
+    const trimmedUsername = username.trim();
+    
+    // Validate that the user exists
+    if (!availableUsers.includes(trimmedUsername)) {
+      setInviteError(`User '${trimmedUsername}' does not exist`);
+      return;
+    }
+    
+    // Check if user is already a participant
+    if (meeting?.participators.some(p => p.username === trimmedUsername)) {
+      setInviteError(`User '${trimmedUsername}' is already invited to this meeting`);
       return;
     }
     
@@ -216,7 +293,7 @@ const MeetingInfo: React.FC = () => {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({ username: usernameToInvite.trim() }),
+        body: JSON.stringify({ username: trimmedUsername }),
       });
       
       if (!res.ok) {
@@ -224,7 +301,8 @@ const MeetingInfo: React.FC = () => {
       }
       
       // Clear form and close modal
-      setUsernameToInvite('');
+      setUserSearch('');
+      setShowSuggestions(false);
       setShowInviteModal(false);
       
       // Refresh meeting details
@@ -234,6 +312,8 @@ const MeetingInfo: React.FC = () => {
       setInviteError('Failed to invite user. Please try again.');
     }
   };
+  
+  // No longer need separate submitInviteForm function
   
   const getParticipatorStatusColor = (status: string) => {
     switch (status) {
@@ -570,14 +650,78 @@ const MeetingInfo: React.FC = () => {
           }}>
             <h2>Invite User</h2>
             <form onSubmit={handleInviteUser}>
-              <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '5px' }}>Username:</label>
+              <div style={{ marginBottom: '15px', position: 'relative' }}>
+                <label style={{ display: 'block', marginBottom: '5px' }}>Search for a user:</label>
                 <input 
+                  ref={searchInputRef}
                   type="text" 
-                  value={usernameToInvite} 
-                  onChange={e => setUsernameToInvite(e.target.value)}
-                  style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
+                  value={userSearch} 
+                  onChange={e => {
+                    setUserSearch(e.target.value);
+                    setShowSuggestions(true);
+                  }}
+                  onFocus={() => setShowSuggestions(true)}
+                  placeholder="Type to search for users..."
+                  style={{ 
+                    width: '100%', 
+                    padding: '8px', 
+                    boxSizing: 'border-box',
+                    borderRadius: '4px',
+                    border: '1px solid #ddd',
+                    marginBottom: '5px' /* Add small space between input and tags */
+                  }}
                 />
+                
+                {/* User suggestions dropdown */}
+                {showSuggestions && (
+                  <div 
+                    ref={suggestionsRef}
+                    style={{ 
+                      position: 'absolute', 
+                      zIndex: 100,
+                      top: 'calc(100% + 10px)', /* Add 10px space between tags and dropdown */
+                      left: 0, 
+                      right: 0,
+                      backgroundColor: 'white', 
+                      border: '1px solid #ddd',
+                      borderRadius: '0 0 4px 4px',
+                      boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+                      maxHeight: '200px',
+                      overflowY: 'auto'
+                    }}
+                  >
+                    {getFilteredUsers().length > 0 ? (
+                      getFilteredUsers().map(user => (
+                        <div 
+                          key={user} 
+                          onClick={() => {
+                            setUserSearch(user);
+                            setShowSuggestions(false);
+                          }}
+                          onMouseDown={(e) => e.preventDefault()} // Prevent blur from closing dropdown
+                          style={{ 
+                            padding: '10px', 
+                            cursor: 'pointer',
+                            borderBottom: '1px solid #eee',
+                            transition: 'background-color 0.2s'
+                          }}
+                          onMouseOver={(e) => {
+                            e.currentTarget.style.backgroundColor = '#f5f5f5';
+                          }}
+                          onMouseOut={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                          }}
+                        >
+                          {user}
+                        </div>
+                      ))
+                    ) : userSearch.trim() ? (
+                      <div style={{ padding: '10px', color: '#666', fontStyle: 'italic' }}>
+                        No matching users found
+                      </div>
+                    ) : null}
+                  </div>
+                )}
               </div>
               {inviteError && <div style={{ color: 'red', marginBottom: '15px' }}>{inviteError}</div>}
               <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
