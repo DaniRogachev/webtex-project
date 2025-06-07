@@ -1,17 +1,14 @@
 import express, { Request, Response, Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { ObjectId } from 'mongodb';
 import { authenticateToken, AuthenticatedRequest } from '../middlewares/authenticateToken.js';
+import { getUsersCollection } from '../db/index.js';
 
 const router: Router = express.Router();
 const JWT_SECRET = 'your_jwt_secret';
 
-interface User {
-  username: string;
-  password: string;
-}
-
-const users: User[] = [];
+// User interface is now imported from '../interfaces/user.js'
 
 router.post('/register', async (req: Request, res: Response): Promise<void> => {
   const { username, password } = req.body;
@@ -19,36 +16,62 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
     res.status(400).json({ message: 'Username and password required.' });
     return;
   }
-  const existingUser = users.find(u => u.username === username);
-  if (existingUser) {
-    res.status(409).json({ message: 'User already exists.' });
-    return;
+  
+  try {
+    const usersCollection = getUsersCollection();
+    
+    // Check if user already exists
+    const existingUser = await usersCollection.findOne({ username });
+    if (existingUser) {
+      res.status(409).json({ message: 'User already exists.' });
+      return;
+    }
+    
+    // Hash password and create user
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await usersCollection.insertOne({ username, password: hashedPassword });
+    
+    res.status(201).json({ message: 'User registered.' });
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({ message: 'Server error during registration.' });
   }
-  const hashedPassword = await bcrypt.hash(password, 10);
-  users.push({ username, password: hashedPassword });
-  res.status(201).json({ message: 'User registered.' });
 });
 
 router.post('/login', async (req: Request, res: Response): Promise<void> => {
   const { username, password } = req.body;
-  const user = users.find(u => u.username === username);
-  if (!user) {
-    res.status(404).json({ message: 'Invalid credentials.' });
-    return;
+  
+  try {
+    const usersCollection = getUsersCollection();
+    
+    // Find user in database
+    const user = await usersCollection.findOne({ username });
+    if (!user) {
+      res.status(404).json({ message: 'Invalid credentials.' });
+      return;
+    }
+    
+    // Compare passwords
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      res.status(404).json({ message: 'Invalid credentials.' });
+      return;
+    }
+    
+    // Generate token
+    const token = jwt.sign({ username }, JWT_SECRET, { expiresIn: '1h' });
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: false, // set to true in production with HTTPS
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 1000 // 1 hour
+    });
+    
+    res.json({ message: 'Login successful' });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Server error during login.' });
   }
-  const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) {
-    res.status(404).json({ message: 'Invalid credentials.' });
-    return;
-  }
-  const token = jwt.sign({ username }, JWT_SECRET, { expiresIn: '1h' });
-  res.cookie('token', token, {
-    httpOnly: true,
-    secure: false, // set to true in production with HTTPS
-    sameSite: 'lax',
-    maxAge: 60 * 60 * 1000 // 1 hour
-  });
-  res.json({ message: 'Login successful' });
 });
 
 router.post('/logout', (req: Request, res: Response): void => {

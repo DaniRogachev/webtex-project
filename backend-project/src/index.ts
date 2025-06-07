@@ -3,6 +3,8 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import authRoutes from './routes/auth.js';
 import meetingRoutes from './routes/meetings.js';
+import { connectToDatabase } from './db/index.js';
+import { initializeDatabase } from './db/init-db.js';
 
 const app = express();
 const PORT = 3000;
@@ -17,6 +19,16 @@ app.use(cookieParser());
 app.use('/api', authRoutes);
 app.use('/api/meetings', meetingRoutes);
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+// Initialize and connect to MongoDB before starting the server
+initializeDatabase()
+  .then(() => connectToDatabase())
+  .then(() => {
+    // Start the server after successful database connection
+    app.listen(PORT, () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  })
+  .catch((error: Error) => {
+    console.error('Failed to connect to MongoDB. Server not started:', error);
+    process.exit(1);
+  });

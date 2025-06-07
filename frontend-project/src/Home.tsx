@@ -88,7 +88,7 @@ const Home: React.FC = () => {
   const fetchInvites = async () => {
     try {
       setInvitesLoading(true);
-      const res = await fetch('http://localhost:3000/api/meetings/invites', {
+      const res = await fetch('http://localhost:3000/api/meetings/invited', {
         method: 'GET',
         credentials: 'include',
       });
