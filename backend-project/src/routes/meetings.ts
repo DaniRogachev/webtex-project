@@ -13,11 +13,11 @@ import {
   removeParticipant,
   inviteParticipant,
   deleteMeeting
-} from '../utils/storage.js';
+} from '../utils/mongo-storage.js';
 
 const router: Router = express.Router();
 
-router.post('/', authenticateToken, (req: AuthenticatedRequest, res: Response): void => {
+router.post('/', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { title, description, startDate, endDate, invitedUsers } = req.body;
   
   if (!title || !description || !startDate || !endDate) {
@@ -70,7 +70,7 @@ router.post('/', authenticateToken, (req: AuthenticatedRequest, res: Response): 
   }
   
   try {
-    const newMeeting = createMeeting({
+    const newMeeting = await createMeeting({
       title,
       description,
       startDate,
@@ -86,10 +86,10 @@ router.post('/', authenticateToken, (req: AuthenticatedRequest, res: Response): 
   }
 });
 
-router.get('/', authenticateToken, (req: AuthenticatedRequest, res: Response): void => {
+router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    // Get only meetings where the current user is an accepted participator
-    const userMeetings = getMeetingsByParticipator(req.user?.username || '', 'accepted');
+    // Get only meetings where the current user is a participator
+    const userMeetings = await getMeetingsByParticipator(req.user!.username);
     res.json(userMeetings);
   } catch (error) {
     console.error('Error fetching meetings:', error);
@@ -98,9 +98,9 @@ router.get('/', authenticateToken, (req: AuthenticatedRequest, res: Response): v
 });
 
 // Get meetings where the user is invited but hasn't responded yet
-router.get('/invites', authenticateToken, (req: AuthenticatedRequest, res: Response): void => {
+router.get('/invited', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const invitedMeetings = getMeetingsByParticipator(req.user?.username || '', 'invited');
+    const invitedMeetings = await getMeetingsByParticipator(req.user!.username, 'invited');
     res.json(invitedMeetings);
   } catch (error) {
     console.error('Error fetching invites:', error);
@@ -109,7 +109,7 @@ router.get('/invites', authenticateToken, (req: AuthenticatedRequest, res: Respo
 });
 
 // Respond to an invite
-router.post('/:meetingId/respond-to-invite', authenticateToken, (req: AuthenticatedRequest, res: Response): void => {
+router.post('/:meetingId/respond-to-invite', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { meetingId } = req.params;
   const { reply } = req.body;
   
@@ -120,7 +120,7 @@ router.post('/:meetingId/respond-to-invite', authenticateToken, (req: Authentica
   
   try {
     const response = reply === 'accept' ? 'accepted' : 'declined';
-    const success = respondToInvite(meetingId, req.user?.username || '', response);
+    const success = await respondToInvite(meetingId, req.user?.username || '', response);
     
     if (!success) {
       res.status(404).json({ message: 'Meeting not found or you are not invited to this meeting.' });
@@ -135,7 +135,7 @@ router.post('/:meetingId/respond-to-invite', authenticateToken, (req: Authentica
 });
 
 // Remove a participant (creator only)
-router.delete('/:meetingId/participants', authenticateToken, (req: AuthenticatedRequest, res: Response): void => {
+router.delete('/:meetingId/participants', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { meetingId } = req.params;
   const { username } = req.body;
   
@@ -145,7 +145,7 @@ router.delete('/:meetingId/participants', authenticateToken, (req: Authenticated
   }
   
   try {
-    const success = removeParticipant(meetingId, username, req.user?.username || '');
+    const success = await removeParticipant(meetingId, username, req.user?.username || '');
     
     if (!success) {
       res.status(403).json({ 
@@ -163,7 +163,7 @@ router.delete('/:meetingId/participants', authenticateToken, (req: Authenticated
 });
 
 // Invite a new participant (creator only)
-router.post('/:meetingId/participants', authenticateToken, (req: AuthenticatedRequest, res: Response): void => {
+router.post('/:meetingId/participants', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { meetingId } = req.params;
   const { username } = req.body;
   
@@ -173,7 +173,7 @@ router.post('/:meetingId/participants', authenticateToken, (req: AuthenticatedRe
   }
   
   try {
-    const success = inviteParticipant(meetingId, username, req.user?.username || '');
+    const success = await inviteParticipant(meetingId, username, req.user?.username || '');
     
     if (!success) {
       res.status(403).json({ 
@@ -191,11 +191,11 @@ router.post('/:meetingId/participants', authenticateToken, (req: AuthenticatedRe
 });
 
 // Delete a meeting (creator only)
-router.delete('/:meetingId', authenticateToken, (req: AuthenticatedRequest, res: Response): void => {
+router.delete('/:meetingId', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { meetingId } = req.params;
   
   try {
-    const success = deleteMeeting(meetingId, req.user?.username || '');
+    const success = await deleteMeeting(meetingId, req.user?.username || '');
     
     if (!success) {
       res.status(403).json({ 
@@ -211,7 +211,7 @@ router.delete('/:meetingId', authenticateToken, (req: AuthenticatedRequest, res:
   }
 });
 
-router.post('/:meetingId/vote', authenticateToken, (req: AuthenticatedRequest, res: Response): void => {
+router.post('/:meetingId/vote', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { meetingId } = req.params;
   const { date, hour, minute } = req.body;
   const username = req.user?.username;
@@ -231,7 +231,7 @@ router.post('/:meetingId/vote', authenticateToken, (req: AuthenticatedRequest, r
     return;
   }
   
-  const meeting = getMeetingById(meetingId);
+  const meeting = await getMeetingById(meetingId);
   if (!meeting) {
     res.status(404).json({ message: 'Meeting not found.' });
     return;
@@ -256,7 +256,7 @@ router.post('/:meetingId/vote', authenticateToken, (req: AuthenticatedRequest, r
   }
   
   try {
-    const newVote = createVote({
+    const newVote = await createVote({
       meetingId,
       username,
       date,
@@ -276,19 +276,19 @@ router.post('/:meetingId/vote', authenticateToken, (req: AuthenticatedRequest, r
   }
 });
 
-router.get('/:meetingId/votes', authenticateToken, (req: AuthenticatedRequest, res: Response): void => {
+router.get('/:meetingId/votes', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { meetingId } = req.params;
   
-  const meeting = getMeetingById(meetingId);
-  if (!meeting) {
-    res.status(404).json({ message: 'Meeting not found.' });
-    return;
-  }
-  
   try {
-    const votes = getVotesByMeetingId(meetingId);
+    const meeting = await getMeetingById(meetingId);
+    if (!meeting) {
+      res.status(404).json({ message: 'Meeting not found.' });
+      return;
+    }
     
-    const results = getVoteResults(meetingId);
+    const votes = await getVotesByMeetingId(meetingId);
+    
+    const results = await getVoteResults(meetingId);
     
     res.json({
       meeting,

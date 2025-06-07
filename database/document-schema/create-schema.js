@@ -1,104 +1,93 @@
 use("vote_for_meeting");     
 
 // User collection
-db.createCollection("user", {
+db.createCollection("users", {
   validator: {
     $jsonSchema: {
       bsonType: "object",
-      required: ["name", "email", "timezone", "created_at"],
+      required: ["username", "password"],
       additionalProperties: false,
       properties: {
-        _id:        { bsonType: "objectId", description: "generated automatically" },
-        name:       { bsonType: "string",    minLength: 1 },
-        email:      { bsonType: "string",    pattern: "^.+@.+\\..+$" },
-        timezone:   { bsonType: "string" },
-        created_at: { bsonType: "date"      }
+        _id:      { bsonType: "objectId", description: "generated automatically" },
+        username: { bsonType: "string", minLength: 1 },
+        password: { bsonType: "string", minLength: 1 }
       }
     }
   },
   validationLevel: "strict"
 });
 
-db.user.createIndex({ email: 1 }, { unique: true, name: "ux_user_email" });
+db.users.createIndex({ username: 1 }, { unique: true, name: "ux_users_username" });
 
 
-// meeting collection
-db.createCollection("meeting", {
+// meetings collection - Matches Meeting interface
+db.createCollection("meetings", {
   validator: {
     $jsonSchema: {
       bsonType: "object",
-      required: [
-        "creator_id",
-        "title",
-        "range",
-        "slot_length_min",
-        "participants",
-        "time_slots"
-      ],
+      required: ["title", "description", "startDate", "endDate", "createdBy", "createdAt", "participators"],
       additionalProperties: false,
-
       properties: {
         _id:         { bsonType: "objectId" },
-        creator_id:  { bsonType: "objectId", description: "FK → user._id" },
-        title:       { bsonType: "string",   minLength: 1 },
-        description: { bsonType: ["string", "null"] },
-
+        id:          { bsonType: "string" },   // String ID (could be ObjectId as string)
+        title:       { bsonType: "string", minLength: 1 },
+        description: { bsonType: "string" },
+        startDate:   { bsonType: "string" },   // ISO 8601 format
+        endDate:     { bsonType: "string" },   // ISO 8601 format
+        createdBy:   { bsonType: "string" },   // Username of creator
+        createdAt:   { bsonType: "string" },   // ISO 8601 format
         
-        range: {
-          bsonType: "object",
-          required: ["start", "end"],
-          properties: {
-            start: { bsonType: "date" },
-            end:   { bsonType: "date" }
-          }
-        },
-
-        slot_length_min: { bsonType: "int",   minimum: 1 },
-
-        participants: {
+        participators: {
           bsonType: "array",
-          minItems: 1,
           items: {
             bsonType: "object",
-            required: ["user_id", "status"],
+            required: ["username", "status"],
             additionalProperties: false,
             properties: {
-              user_id:      { bsonType: "objectId" },
+              username:     { bsonType: "string" },
               status:       { enum: ["invited", "accepted", "declined"] },
-              responded_at: { bsonType: ["date", "null"] }
+              responded_at: { bsonType: ["string", "null"] }  // Optional ISO 8601 format
             }
           }
-        },
-
-        time_slots: {
-          bsonType: "array",
-          minItems: 1,
-          items: {
-            bsonType: "object",
-            required: ["slot_id", "start", "end", "votes"],
-            additionalProperties: false,
-            properties: {
-              slot_id: { bsonType: "string" },     
-              start:   { bsonType: "date" },
-              end:     { bsonType: "date" },
-              votes: {
-                bsonType: "array",
-                items: { bsonType: "objectId" }   
-              }
-            }
-          }
-        },
-
-        created_at: { bsonType: ["date", "null"] },
-        updated_at: { bsonType: ["date", "null"] }
+        }
       }
     }
-  }
+  },
+  validationLevel: "strict"
 });
 
-// indexes
-db.meeting.createIndex({ creator_id: 1 },                   { name: "ix_meeting_creator" }); // by creator
-db.meeting.createIndex({ "participants.user_id": 1 },       { name: "ix_meeting_participant_uid" }); // by participants
-db.meeting.createIndex({ "time_slots.slot_id": 1 },         { name: "ix_meeting_slot_id" }); // by time slot
+// Indexes for meetings
+db.meetings.createIndex({ id: 1 }, { unique: true, name: "ux_meetings_id" });
+db.meetings.createIndex({ createdBy: 1 }, { name: "ix_meetings_creator" });
+db.meetings.createIndex({ "participators.username": 1 }, { name: "ix_meetings_participator" });
+
+// votes collection - Matches Vote interface
+db.createCollection("votes", {
+  validator: {
+    $jsonSchema: {
+      bsonType: "object",
+      required: ["meetingId", "username", "date", "hour", "minute", "createdAt"],
+      additionalProperties: false,
+      properties: {
+        _id:       { bsonType: "objectId" },
+        id:        { bsonType: "string" },   // String ID (could be ObjectId as string)
+        meetingId: { bsonType: "string" },   // References meetings.id
+        username:  { bsonType: "string" },   // Username who voted
+        date:      { bsonType: "string" },   // ISO 8601 date format (YYYY-MM-DD)
+        hour:      { bsonType: "int" },
+        minute:    { bsonType: "int" },
+        createdAt: { bsonType: "string" }    // ISO 8601 format
+      }
+    }
+  },
+  validationLevel: "strict"
+});
+
+// Indexes for votes
+db.votes.createIndex({ id: 1 }, { unique: true, name: "ux_votes_id" });
+db.votes.createIndex({ meetingId: 1 }, { name: "ix_votes_meeting" });
+db.votes.createIndex({ username: 1 }, { name: "ix_votes_username" });
+db.votes.createIndex({ meetingId: 1, username: 1, date: 1, hour: 1, minute: 1 }, 
+  { unique: true, name: "ux_votes_unique_vote" });  // Prevent duplicate votes
 
 print("vote_for_meeting schema created successfully.");
