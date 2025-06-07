@@ -1,4 +1,4 @@
-import { Meeting, Vote } from '../interfaces/meeting.js';
+import { Meeting, Vote, Participator } from '../interfaces/meeting.js';
 
 export const meetings: Map<string, Meeting> = new Map();
 export const votes: Map<string, Vote> = new Map();
@@ -17,6 +17,99 @@ export const createMeeting = (meeting: Omit<Meeting, 'id' | 'createdAt'>): Meeti
 
 export const getMeetings = (): Meeting[] => {
   return Array.from(meetings.values());
+};
+
+export const getMeetingsByParticipator = (username: string, status?: 'invited' | 'accepted' | 'declined'): Meeting[] => {
+  return Array.from(meetings.values()).filter(meeting => {
+    const participator = meeting.participators.find(p => p.username === username);
+    if (!participator) return false;
+    return status ? participator.status === status : true;
+  });
+};
+
+export const respondToInvite = (meetingId: string, username: string, response: 'accepted' | 'declined'): boolean => {
+  const meeting = meetings.get(meetingId);
+  if (!meeting) return false;
+  
+  const participatorIndex = meeting.participators.findIndex(p => p.username === username && p.status === 'invited');
+  if (participatorIndex === -1) return false;
+  
+  meeting.participators[participatorIndex] = {
+    username,
+    status: response === 'accepted' ? 'accepted' : 'declined',
+    responded_at: new Date().toISOString()
+  };
+  
+  meetings.set(meetingId, meeting);
+  return true;
+};
+
+export const removeParticipant = (meetingId: string, username: string, creatorUsername: string): boolean => {
+  const meeting = meetings.get(meetingId);
+  
+  // Check if meeting exists and the requester is the creator
+  if (!meeting || meeting.createdBy !== creatorUsername) return false;
+  
+  // Don't allow removing the creator
+  if (username === creatorUsername) return false;
+  
+  // Check if the user is a participant
+  const participatorIndex = meeting.participators.findIndex(p => p.username === username);
+  if (participatorIndex === -1) return false;
+  
+  // Remove participant
+  meeting.participators.splice(participatorIndex, 1);
+  
+  // Delete all votes from this user for this meeting
+  const voteEntries = Array.from(votes.entries());
+  for (const [voteId, vote] of voteEntries) {
+    if (vote.meetingId === meetingId && vote.username === username) {
+      votes.delete(voteId);
+    }
+  }
+  
+  meetings.set(meetingId, meeting);
+  return true;
+};
+
+export const inviteParticipant = (meetingId: string, usernameToInvite: string, creatorUsername: string): boolean => {
+  const meeting = meetings.get(meetingId);
+  
+  // Check if meeting exists and the requester is the creator
+  if (!meeting || meeting.createdBy !== creatorUsername) return false;
+  
+  // Check if user is already a participant
+  const existingParticipator = meeting.participators.find(p => p.username === usernameToInvite);
+  if (existingParticipator) return false;
+  
+  // Add new participant with invited status
+  meeting.participators.push({
+    username: usernameToInvite,
+    status: 'invited'
+  });
+  
+  meetings.set(meetingId, meeting);
+  return true;
+};
+
+export const deleteMeeting = (meetingId: string, creatorUsername: string): boolean => {
+  const meeting = meetings.get(meetingId);
+  
+  // Check if meeting exists and the requester is the creator
+  if (!meeting || meeting.createdBy !== creatorUsername) return false;
+  
+  // Delete meeting
+  meetings.delete(meetingId);
+  
+  // Delete all votes for this meeting
+  const voteEntries = Array.from(votes.entries());
+  for (const [voteId, vote] of voteEntries) {
+    if (vote.meetingId === meetingId) {
+      votes.delete(voteId);
+    }
+  }
+  
+  return true;
 };
 
 export const getMeetingById = (id: string): Meeting | undefined => {

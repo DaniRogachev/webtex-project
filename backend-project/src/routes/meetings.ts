@@ -1,19 +1,24 @@
 import express, { Response, Router } from 'express';
 import { authenticateToken, AuthenticatedRequest } from '../middlewares/authenticateToken.js';
-import { Meeting, Vote } from '../interfaces/meeting.js';
+import { Meeting, Vote, Participator } from '../interfaces/meeting.js';
 import { 
   createMeeting, 
   getMeetings, 
   getMeetingById, 
   createVote, 
   getVotesByMeetingId, 
-  getVoteResults 
+  getVoteResults,
+  getMeetingsByParticipator,
+  respondToInvite,
+  removeParticipant,
+  inviteParticipant,
+  deleteMeeting
 } from '../utils/storage.js';
 
 const router: Router = express.Router();
 
 router.post('/', authenticateToken, (req: AuthenticatedRequest, res: Response): void => {
-  const { title, description, startDate, endDate } = req.body;
+  const { title, description, startDate, endDate, invitedUsers } = req.body;
   
   if (!title || !description || !startDate || !endDate) {
     res.status(400).json({ message: 'Title, description, startDate and endDate are required.' });
@@ -33,13 +38,45 @@ router.post('/', authenticateToken, (req: AuthenticatedRequest, res: Response): 
     return;
   }
   
+  // Validate invited users is an array
+  if (invitedUsers && !Array.isArray(invitedUsers)) {
+    res.status(400).json({ message: 'Invited users must be an array of usernames.' });
+    return;
+  }
+  
+  // Create participators list
+  const participators: Participator[] = [];
+  
+  // Add creator as an accepted participator
+  if (req.user?.username) {
+    participators.push({
+      username: req.user.username,
+      status: 'accepted',
+      responded_at: new Date().toISOString()
+    });
+  }
+  
+  // Add invited users
+  if (Array.isArray(invitedUsers)) {
+    invitedUsers.forEach((username: string) => {
+      // Don't add the creator again
+      if (username !== req.user?.username) {
+        participators.push({
+          username,
+          status: 'invited'
+        });
+      }
+    });
+  }
+  
   try {
     const newMeeting = createMeeting({
       title,
       description,
       startDate,
       endDate,
-      createdBy: req.user?.username
+      createdBy: req.user?.username,
+      participators
     });
     
     res.status(201).json(newMeeting);
@@ -51,11 +88,126 @@ router.post('/', authenticateToken, (req: AuthenticatedRequest, res: Response): 
 
 router.get('/', authenticateToken, (req: AuthenticatedRequest, res: Response): void => {
   try {
-    const allMeetings = getMeetings();
-    res.json(allMeetings);
+    // Get only meetings where the current user is an accepted participator
+    const userMeetings = getMeetingsByParticipator(req.user?.username || '', 'accepted');
+    res.json(userMeetings);
   } catch (error) {
     console.error('Error fetching meetings:', error);
     res.status(500).json({ message: 'Failed to fetch meetings.' });
+  }
+});
+
+// Get meetings where the user is invited but hasn't responded yet
+router.get('/invites', authenticateToken, (req: AuthenticatedRequest, res: Response): void => {
+  try {
+    const invitedMeetings = getMeetingsByParticipator(req.user?.username || '', 'invited');
+    res.json(invitedMeetings);
+  } catch (error) {
+    console.error('Error fetching invites:', error);
+    res.status(500).json({ message: 'Failed to fetch invites.' });
+  }
+});
+
+// Respond to an invite
+router.post('/:meetingId/respond-to-invite', authenticateToken, (req: AuthenticatedRequest, res: Response): void => {
+  const { meetingId } = req.params;
+  const { reply } = req.body;
+  
+  if (reply !== 'accept' && reply !== 'decline') {
+    res.status(400).json({ message: 'Reply must be either "accept" or "decline".' });
+    return;
+  }
+  
+  try {
+    const response = reply === 'accept' ? 'accepted' : 'declined';
+    const success = respondToInvite(meetingId, req.user?.username || '', response);
+    
+    if (!success) {
+      res.status(404).json({ message: 'Meeting not found or you are not invited to this meeting.' });
+      return;
+    }
+    
+    res.json({ message: `Successfully ${response} the meeting invitation.` });
+  } catch (error) {
+    console.error('Error responding to invite:', error);
+    res.status(500).json({ message: 'Failed to respond to invite.' });
+  }
+});
+
+// Remove a participant (creator only)
+router.delete('/:meetingId/participants', authenticateToken, (req: AuthenticatedRequest, res: Response): void => {
+  const { meetingId } = req.params;
+  const { username } = req.body;
+  
+  if (!username) {
+    res.status(400).json({ message: 'Username is required.' });
+    return;
+  }
+  
+  try {
+    const success = removeParticipant(meetingId, username, req.user?.username || '');
+    
+    if (!success) {
+      res.status(403).json({ 
+        message: 'Failed to remove participant. Either the meeting does not exist, you are not the creator, ' +
+                'the participant does not exist, or you are trying to remove yourself as the creator.' 
+      });
+      return;
+    }
+    
+    res.json({ message: `Successfully removed participant ${username} from the meeting.` });
+  } catch (error) {
+    console.error('Error removing participant:', error);
+    res.status(500).json({ message: 'Failed to remove participant.' });
+  }
+});
+
+// Invite a new participant (creator only)
+router.post('/:meetingId/participants', authenticateToken, (req: AuthenticatedRequest, res: Response): void => {
+  const { meetingId } = req.params;
+  const { username } = req.body;
+  
+  if (!username) {
+    res.status(400).json({ message: 'Username is required.' });
+    return;
+  }
+  
+  try {
+    const success = inviteParticipant(meetingId, username, req.user?.username || '');
+    
+    if (!success) {
+      res.status(403).json({ 
+        message: 'Failed to invite participant. Either the meeting does not exist, you are not the creator, ' +
+                'or the participant is already invited.' 
+      });
+      return;
+    }
+    
+    res.json({ message: `Successfully invited ${username} to the meeting.` });
+  } catch (error) {
+    console.error('Error inviting participant:', error);
+    res.status(500).json({ message: 'Failed to invite participant.' });
+  }
+});
+
+// Delete a meeting (creator only)
+router.delete('/:meetingId', authenticateToken, (req: AuthenticatedRequest, res: Response): void => {
+  const { meetingId } = req.params;
+  
+  try {
+    const success = deleteMeeting(meetingId, req.user?.username || '');
+    
+    if (!success) {
+      res.status(403).json({ 
+        message: 'Failed to delete meeting. Either the meeting does not exist or you are not the creator.' 
+      });
+      return;
+    }
+    
+    res.json({ message: 'Successfully deleted the meeting.' });
+  } catch (error) {
+    console.error('Error deleting meeting:', error);
+    res.status(500).json({ message: 'Failed to delete meeting.' });
   }
 });
 

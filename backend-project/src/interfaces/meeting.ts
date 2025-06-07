@@ -1,3 +1,9 @@
+export interface Participator {
+  username: string;
+  status: 'invited' | 'accepted' | 'declined';
+  responded_at?: string; // ISO 8601 format, optional
+}
+
 export interface Meeting {
   id: string;
   title: string;
@@ -6,6 +12,7 @@ export interface Meeting {
   endDate: string; // ISO 8601 format
   createdBy: string;
   createdAt: string; // ISO 8601 format
+  participators: Participator[];
 }
 
 export interface Vote {
