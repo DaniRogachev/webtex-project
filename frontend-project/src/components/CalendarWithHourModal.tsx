@@ -144,17 +144,39 @@ const CalendarWithHourModal: React.FC<CalendarWithHourModalProps> = ({
   };
 
   const tileDisabled = ({ date }: { date: Date }) => {
-    if (date < minDateTime) return true;
-    if (maxDateTime && date > maxDateTime) return true;
+    // Clone the dates and reset the time components for fair date comparison
+    const dateToCheck = new Date(date);
+    dateToCheck.setHours(0, 0, 0, 0);
+    
+    const minDate = new Date(minDateTime);
+    minDate.setHours(0, 0, 0, 0);
+    
+    const maxDate = new Date(maxDateTime);
+    maxDate.setHours(23, 59, 59, 999);
+    
+    if (dateToCheck < minDate) return true;
+    if (dateToCheck > maxDate) return true;
+    
     return false;
   };
 
+  // Set minimum time for the selected date
   let minTimeForModal = '00:00';
-  let minDateTimeForModal = minDateTime;
-  if (selectedDate && selectedDate.toDateString() === now.toDateString()) {
-    const minAllowed = new Date(now.getTime() + 60 * 60 * 1000);
+  let minDateTimeForModal = new Date(minDateTime);
+
+  // If the selected date is today, set minimum time to one hour from now
+  const today = new Date();
+  if (selectedDate && selectedDate.toDateString() === today.toDateString()) {
+    const minAllowed = new Date(today.getTime() + 60 * 60 * 1000); // One hour from now
     minTimeForModal = minAllowed.toTimeString().slice(0, 5);
     minDateTimeForModal = minAllowed;
+  }
+  // If the selected date is the meeting start date (but not today), use its time
+  else if (selectedDate && 
+          selectedDate.toDateString() === minDateTime.toDateString() && 
+          selectedDate.toDateString() !== today.toDateString()) {
+    minTimeForModal = minDateTime.toTimeString().slice(0, 5);
+    minDateTimeForModal = new Date(minDateTime);
   }
 
   // Add a function to handle vote submission
