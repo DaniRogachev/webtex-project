@@ -167,11 +167,10 @@ const CalendarWithHourModal: React.FC<CalendarWithHourModalProps> = ({
   // If the selected date is today, set minimum time to one hour from now
   const today = new Date();
   if (selectedDate && selectedDate.toDateString() === today.toDateString()) {
-    const minAllowed = new Date(today.getTime() + 60 * 60 * 1000); // One hour from now
+    const minAllowed = new Date(today.getTime() + 60 * 60 * 1000);
     minTimeForModal = minAllowed.toTimeString().slice(0, 5);
     minDateTimeForModal = minAllowed;
   }
-  // If the selected date is the meeting start date (but not today), use its time
   else if (selectedDate && 
           selectedDate.toDateString() === minDateTime.toDateString() && 
           selectedDate.toDateString() !== today.toDateString()) {
@@ -179,7 +178,6 @@ const CalendarWithHourModal: React.FC<CalendarWithHourModalProps> = ({
     minDateTimeForModal = new Date(minDateTime);
   }
 
-  // Add a function to handle vote submission
   const handleSubmitVotes = async () => {
     if (chosenDates.length === 0) {
       setSubmissionError('Please select at least one date and time');
@@ -190,7 +188,6 @@ const CalendarWithHourModal: React.FC<CalendarWithHourModalProps> = ({
     setSubmissionError(null);
     
     try {
-      // Submit each vote separately
       for (const vote of chosenDates) {
         const dateString = vote.date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
         
@@ -213,10 +210,8 @@ const CalendarWithHourModal: React.FC<CalendarWithHourModalProps> = ({
         }
       }
       
-      // Clear selected dates after successful submission
       setChosenDates([]);
       
-      // Call the success callback if provided
       if (onVoteSuccess) {
         onVoteSuccess();
       }
@@ -231,7 +226,6 @@ const CalendarWithHourModal: React.FC<CalendarWithHourModalProps> = ({
   // Display already voted times if provided
   React.useEffect(() => {
     if (existingVotes && existingVotes.length > 0) {
-      // Just for display purposes - we don't want to submit these again
       const existingVoteDates = existingVotes.map(vote => {
         const date = new Date(vote.date);
         return { date, hour: vote.hour, minute: vote.minute };

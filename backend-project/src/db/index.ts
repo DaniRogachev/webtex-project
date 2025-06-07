@@ -11,25 +11,18 @@ interface Collections {
   votes: Collection<Vote>;
 }
 
-// Global variables for connection
 let client: MongoClient | null = null;
 let db: Db | null = null;
 let collections: Collections | null = null;
 
-/**
- * Initialize the database connection
- */
 export async function connectToDatabase(): Promise<void> {
   try {
-    // Connect to MongoDB
     client = new MongoClient(DB_CONFIG.uri);
     await client.connect();
     console.log('Connected successfully to MongoDB server');
     
-    // Get the database
     db = client.db(DB_CONFIG.databaseName);
     
-    // Initialize collections
     collections = {
       users: db.collection<User>('users'),
       meetings: db.collection<Meeting>('meetings'),
@@ -41,9 +34,6 @@ export async function connectToDatabase(): Promise<void> {
   }
 }
 
-/**
- * Close the database connection
- */
 export async function closeDatabaseConnection(): Promise<void> {
   try {
     if (client) {
@@ -59,9 +49,6 @@ export async function closeDatabaseConnection(): Promise<void> {
   }
 }
 
-/**
- * Get the users collection
- */
 export function getUsersCollection(): Collection<User> {
   if (!collections) {
     throw new Error('Database connection not established. Call connectToDatabase() first.');
@@ -69,9 +56,6 @@ export function getUsersCollection(): Collection<User> {
   return collections.users;
 }
 
-/**
- * Get the meetings collection
- */
 export function getMeetingsCollection(): Collection<Meeting> {
   if (!collections) {
     throw new Error('Database connection not established. Call connectToDatabase() first.');
@@ -79,9 +63,6 @@ export function getMeetingsCollection(): Collection<Meeting> {
   return collections.meetings;
 }
 
-/**
- * Get the votes collection
- */
 export function getVotesCollection(): Collection<Vote> {
   if (!collections) {
     throw new Error('Database connection not established. Call connectToDatabase() first.');

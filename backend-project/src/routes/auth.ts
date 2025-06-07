@@ -8,7 +8,6 @@ import { getUsersCollection } from '../db/index.js';
 const router: Router = express.Router();
 const JWT_SECRET = 'your_jwt_secret';
 
-// User interface is now imported from '../interfaces/user.js'
 
 router.post('/register', async (req: Request, res: Response): Promise<void> => {
   const { username, password } = req.body;
@@ -17,7 +16,6 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
     return;
   }
   
-  // Validate password length
   if (password.length < 8) {
     res.status(400).json({ message: 'Password must be at least 8 characters long.' });
     return;
@@ -26,14 +24,12 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
   try {
     const usersCollection = getUsersCollection();
     
-    // Check if user already exists
     const existingUser = await usersCollection.findOne({ username });
     if (existingUser) {
       res.status(409).json({ message: 'User already exists.' });
       return;
     }
     
-    // Hash password and create user
     const hashedPassword = await bcrypt.hash(password, 10);
     await usersCollection.insertOne({ username, password: hashedPassword });
     
@@ -50,25 +46,22 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
   try {
     const usersCollection = getUsersCollection();
     
-    // Find user in database
     const user = await usersCollection.findOne({ username });
     if (!user) {
       res.status(404).json({ message: 'Invalid credentials.' });
       return;
     }
     
-    // Compare passwords
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       res.status(404).json({ message: 'Invalid credentials.' });
       return;
     }
     
-    // Generate token
     const token = jwt.sign({ username }, JWT_SECRET, { expiresIn: '1h' });
     res.cookie('token', token, {
       httpOnly: true,
-      secure: false, // set to true in production with HTTPS
+      secure: false,
       sameSite: 'lax',
       maxAge: 60 * 60 * 1000 // 1 hour
     });

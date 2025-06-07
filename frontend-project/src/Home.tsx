@@ -137,7 +137,6 @@ const Home: React.FC<HomeProps> = ({ onLogout }) => {
         throw new Error(`Error ${res.status}: ${res.statusText}`);
       }
 
-      // Refresh both lists
       fetchInvites();
       fetchMeetings();
     } catch (err) {

@@ -20,7 +20,6 @@ interface Meeting {
   participators: Participator[];
 }
 
-// We'll use the VoteType from CalendarWithHourModal component
 type Vote = VoteType;
 
 interface VoteResult {
@@ -67,12 +66,9 @@ const MeetingInfo: React.FC = () => {
     fetchAvailableUsers();
   }, [id]);
   
-  // Check if current user is the creator and get participation status whenever username or meeting changes
   useEffect(() => {
     if (meeting && currentUsername) {
       setIsCreator(meeting.createdBy === currentUsername);
-      
-      // Find user status in participants
       const userParticipation = meeting.participators.find(p => p.username === currentUsername);
       if (userParticipation) {
         setUserStatus(userParticipation.status as 'accepted' | 'invited' | 'declined');
@@ -87,7 +83,6 @@ const MeetingInfo: React.FC = () => {
         userStatus: userParticipation?.status
       });
       
-      // Filter votes for current user
       if (votes.length > 0) {
         const currentUserVotes = votes.filter(vote => vote.username === currentUsername);
         setUserVotes(currentUserVotes);
@@ -144,9 +139,6 @@ const MeetingInfo: React.FC = () => {
       setResults(data.results);
       setError(null);
       
-      // Note: We now handle the creator check in a separate useEffect
-      
-      // Extract user votes
       if (votes.length > 0 && currentUsername) {
         const currentUserVotes = votes.filter(vote => vote.username === currentUsername);
         setUserVotes(currentUserVotes);
@@ -201,7 +193,6 @@ const MeetingInfo: React.FC = () => {
         throw new Error(`Error ${res.status}: ${res.statusText}`);
       }
       
-      // Refresh meeting details
       fetchMeetingDetails();
     } catch (err) {
       console.error('Error removing participant:', err);
@@ -249,20 +240,17 @@ const MeetingInfo: React.FC = () => {
     };
   }, []);
   
-  // Filter available users based on search input
   const getFilteredUsers = () => {
     if (!userSearch.trim()) return [];
     
     return availableUsers
       .filter(user => 
         user.toLowerCase().includes(userSearch.toLowerCase()) && 
-        // Don't show users who are already participants
         !meeting?.participators.some(p => p.username === user)
       )
-      .slice(0, 5); // Limit to 5 suggestions for better UI
+      .slice(0, 5);
   };
   
-  // Handle the form submission to invite the user
   const handleInviteUser = async (e: React.FormEvent) => {
     e.preventDefault();
     const username = userSearch;
@@ -273,13 +261,11 @@ const MeetingInfo: React.FC = () => {
     
     const trimmedUsername = username.trim();
     
-    // Validate that the user exists
     if (!availableUsers.includes(trimmedUsername)) {
       setInviteError(`User '${trimmedUsername}' does not exist`);
       return;
     }
     
-    // Check if user is already a participant
     if (meeting?.participators.some(p => p.username === trimmedUsername)) {
       setInviteError(`User '${trimmedUsername}' is already invited to this meeting`);
       return;
@@ -300,12 +286,10 @@ const MeetingInfo: React.FC = () => {
         throw new Error(`Error ${res.status}: ${res.statusText}`);
       }
       
-      // Clear form and close modal
       setUserSearch('');
       setShowSuggestions(false);
       setShowInviteModal(false);
       
-      // Refresh meeting details
       fetchMeetingDetails();
     } catch (err) {
       console.error('Error inviting user:', err);
@@ -313,7 +297,6 @@ const MeetingInfo: React.FC = () => {
     }
   };
   
-  // No longer need separate submitInviteForm function
   
   const getParticipatorStatusColor = (status: string) => {
     switch (status) {
@@ -668,7 +651,7 @@ const MeetingInfo: React.FC = () => {
                     boxSizing: 'border-box',
                     borderRadius: '4px',
                     border: '1px solid #ddd',
-                    marginBottom: '5px' /* Add small space between input and tags */
+                    marginBottom: '5px'
                   }}
                 />
                 
@@ -679,7 +662,7 @@ const MeetingInfo: React.FC = () => {
                     style={{ 
                       position: 'absolute', 
                       zIndex: 100,
-                      top: 'calc(100% + 10px)', /* Add 10px space between tags and dropdown */
+                      top: 'calc(100% + 10px)',
                       left: 0, 
                       right: 0,
                       backgroundColor: 'white', 
@@ -698,7 +681,7 @@ const MeetingInfo: React.FC = () => {
                             setUserSearch(user);
                             setShowSuggestions(false);
                           }}
-                          onMouseDown={(e) => e.preventDefault()} // Prevent blur from closing dropdown
+                          onMouseDown={(e) => e.preventDefault()} 
                           style={{ 
                             padding: '10px', 
                             cursor: 'pointer',

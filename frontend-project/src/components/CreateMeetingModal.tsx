@@ -21,7 +21,6 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({ onClose, onSubm
   const suggestionsRef = React.useRef<HTMLDivElement>(null);
   const searchInputRef = React.useRef<HTMLInputElement>(null);
   
-  // Fetch available users when component mounts
   React.useEffect(() => {
     fetchAvailableUsers();
   }, []);
@@ -56,7 +55,6 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({ onClose, onSubm
     return `${year}-${month}-${day}`;
   };
   
-  // Effect to handle clicks outside the suggestion dropdown
   React.useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -75,7 +73,6 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({ onClose, onSubm
     };
   }, []);
   
-  // Filter available users based on search input
   const getFilteredUsers = () => {
     if (!userSearch.trim()) return [];
     
@@ -84,10 +81,9 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({ onClose, onSubm
         user.toLowerCase().includes(userSearch.toLowerCase()) && 
         !selectedUsers.includes(user)
       )
-      .slice(0, 5); // Limit to 5 suggestions for better UI
+      .slice(0, 5);
   };
   
-  // Add a user to the selected list
   const addUser = (username: string) => {
     if (!username.trim() || selectedUsers.includes(username)) return;
     
@@ -107,7 +103,6 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({ onClose, onSubm
     }
   };
   
-  // Remove a user from the selected list
   const removeUser = (username: string) => {
     setSelectedUsers(selectedUsers.filter(user => user !== username));
   };
@@ -139,10 +134,6 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({ onClose, onSubm
       setFormError('End date cannot be before start date');
       return;
     }
-    // Now we allow end date to be the same as start date
-
-    // We already validated users when they were added to the selectedUsers list
-    const invitedUsersArray = [...selectedUsers];
 
     try {
       const res = await fetch('http://localhost:3000/api/meetings', {
@@ -261,7 +252,7 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({ onClose, onSubm
                 style={{ 
                   position: 'absolute', 
                   zIndex: 100,
-                  top: 'calc(100% + 10px)', /* Add space between tags and dropdown */
+                  top: 'calc(100% + 10px)', 
                   left: 0, 
                   right: 0,
                   backgroundColor: 'white', 
@@ -277,7 +268,7 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({ onClose, onSubm
                     <div 
                       key={user} 
                       onClick={() => addUser(user)}
-                      onMouseDown={(e) => e.preventDefault()} // Prevent blur from closing dropdown
+                      onMouseDown={(e) => e.preventDefault()}
                       style={{ 
                         padding: '10px', 
                         cursor: 'pointer',
@@ -304,8 +295,8 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({ onClose, onSubm
             
             {/* Selected users chips */}
             <div style={{ 
-              marginTop: '5px', /* Reduced top margin to move tags closer to input */
-              marginBottom: '10px', /* Add space between tags and dropdown */
+              marginTop: '5px', 
+              marginBottom: '10px', 
               display: 'flex', 
               flexWrap: 'wrap',
               gap: '8px'

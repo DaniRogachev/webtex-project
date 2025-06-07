@@ -25,7 +25,6 @@ const Register: React.FC<AuthProps> = ({ onAuthSuccess }) => {
     setError('');
     setPasswordError('');
     
-    // Validate password before submitting
     if (!validatePassword(password)) {
       return;
     }

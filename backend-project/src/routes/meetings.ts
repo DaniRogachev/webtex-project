@@ -53,16 +53,13 @@ router.post('/', authenticateToken, async (req: AuthenticatedRequest, res: Respo
     return;
   }
   
-  // Validate invited users is an array
   if (invitedUsers && !Array.isArray(invitedUsers)) {
     res.status(400).json({ message: 'Invited users must be an array of usernames.' });
     return;
   }
   
-  // Create participators list
   const participators: Participator[] = [];
   
-  // Add creator as an accepted participator
   if (req.user?.username) {
     participators.push({
       username: req.user.username,
@@ -71,10 +68,8 @@ router.post('/', authenticateToken, async (req: AuthenticatedRequest, res: Respo
     });
   }
   
-  // Add invited users
   if (Array.isArray(invitedUsers)) {
     invitedUsers.forEach((username: string) => {
-      // Don't add the creator again
       if (username !== req.user?.username) {
         participators.push({
           username,
@@ -103,7 +98,6 @@ router.post('/', authenticateToken, async (req: AuthenticatedRequest, res: Respo
 
 router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    // Get only meetings where the current user is a participator
     const userMeetings = await getMeetingsByParticipator(req.user!.username);
     res.json(userMeetings);
   } catch (error) {
@@ -112,7 +106,6 @@ router.get('/', authenticateToken, async (req: AuthenticatedRequest, res: Respon
   }
 });
 
-// Get meetings where the user is invited but hasn't responded yet
 router.get('/invited', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const invitedMeetings = await getMeetingsByParticipator(req.user!.username, 'invited');
@@ -123,7 +116,6 @@ router.get('/invited', authenticateToken, async (req: AuthenticatedRequest, res:
   }
 });
 
-// Respond to an invite
 router.post('/:meetingId/respond-to-invite', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { meetingId } = req.params;
   const { reply } = req.body;
@@ -149,7 +141,6 @@ router.post('/:meetingId/respond-to-invite', authenticateToken, async (req: Auth
   }
 });
 
-// Remove a participant (creator only)
 router.delete('/:meetingId/participants', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { meetingId } = req.params;
   const { username } = req.body;
@@ -177,7 +168,6 @@ router.delete('/:meetingId/participants', authenticateToken, async (req: Authent
   }
 });
 
-// Invite a new participant (creator only)
 router.post('/:meetingId/participants', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { meetingId } = req.params;
   const { username } = req.body;
@@ -205,7 +195,6 @@ router.post('/:meetingId/participants', authenticateToken, async (req: Authentic
   }
 });
 
-// Delete a meeting (creator only)
 router.delete('/:meetingId', authenticateToken, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { meetingId } = req.params;
   

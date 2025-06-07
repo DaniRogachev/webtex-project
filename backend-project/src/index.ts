@@ -21,11 +21,9 @@ app.use('/api', authRoutes);
 app.use('/api/meetings', meetingRoutes);
 app.use('/api/users', usersRoutes);
 
-// Initialize and connect to MongoDB before starting the server
 initializeDatabase()
   .then(() => connectToDatabase())
   .then(() => {
-    // Start the server after successful database connection
     app.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`);
     });
