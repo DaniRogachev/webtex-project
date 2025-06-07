@@ -38,6 +38,21 @@ router.post('/', authenticateToken, async (req: AuthenticatedRequest, res: Respo
     return;
   }
   
+  // Prevent past dates
+  const currentDate = new Date();
+  // Reset time to start of day for fair comparison
+  currentDate.setHours(0, 0, 0, 0);
+  
+  if (start < currentDate) {
+    res.status(400).json({ message: 'Start date cannot be in the past.' });
+    return;
+  }
+  
+  if (end < currentDate) {
+    res.status(400).json({ message: 'End date cannot be in the past.' });
+    return;
+  }
+  
   // Validate invited users is an array
   if (invitedUsers && !Array.isArray(invitedUsers)) {
     res.status(400).json({ message: 'Invited users must be an array of usernames.' });

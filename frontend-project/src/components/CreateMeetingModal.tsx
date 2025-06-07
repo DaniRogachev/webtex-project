@@ -13,6 +13,15 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({ onClose, onSubm
   const [invitedUsers, setInvitedUsers] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
 
+  // Function to get today's date in YYYY-MM-DD format for date inputs
+  const getTodayDateString = (): string => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
@@ -21,8 +30,22 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({ onClose, onSubm
       setFormError('Title, description, start date, and end date are required');
       return;
     }
+    
+    const today = new Date(getTodayDateString());
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    if (start < today) {
+      setFormError('Start date cannot be in the past');
+      return;
+    }
+    
+    if (end < today) {
+      setFormError('End date cannot be in the past');
+      return;
+    }
 
-    if (new Date(endDate) <= new Date(startDate)) {
+    if (end <= start) {
       setFormError('End date must be after start date');
       return;
     }
@@ -107,6 +130,7 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({ onClose, onSubm
               type="date" 
               value={startDate} 
               onChange={e => setStartDate(e.target.value)}
+              min={getTodayDateString()}
               style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
             />
           </div>
@@ -116,6 +140,7 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({ onClose, onSubm
               type="date" 
               value={endDate} 
               onChange={e => setEndDate(e.target.value)}
+              min={startDate || getTodayDateString()}
               style={{ width: '100%', padding: '8px', boxSizing: 'border-box' }}
             />
           </div>
