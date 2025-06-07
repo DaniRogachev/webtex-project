@@ -135,10 +135,11 @@ const CreateMeetingModal: React.FC<CreateMeetingModalProps> = ({ onClose, onSubm
       return;
     }
 
-    if (end <= start) {
-      setFormError('End date must be after start date');
+    if (end < start) {
+      setFormError('End date cannot be before start date');
       return;
     }
+    // Now we allow end date to be the same as start date
 
     // We already validated users when they were added to the selectedUsers list
     const invitedUsersArray = [...selectedUsers];
