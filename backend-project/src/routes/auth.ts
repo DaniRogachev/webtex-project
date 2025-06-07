@@ -17,6 +17,12 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
     return;
   }
   
+  // Validate password length
+  if (password.length < 8) {
+    res.status(400).json({ message: 'Password must be at least 8 characters long.' });
+    return;
+  }
+  
   try {
     const usersCollection = getUsersCollection();
     

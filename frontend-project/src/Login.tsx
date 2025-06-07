@@ -31,13 +31,14 @@ const Login: React.FC<AuthProps> = ({ onAuthSuccess }) => {
 
   return (
     <div className="auth-container">
-      <h2>Login</h2>
-      <form onSubmit={handleLogin}>
+      <h2 style={{ marginBottom: '20px', textAlign: 'center' }}>Login</h2>
+      <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
         <input
           type="text"
           placeholder="Username"
           value={username}
           onChange={e => setUsername(e.target.value)}
+          style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
           required
         />
         <input
@@ -45,10 +46,25 @@ const Login: React.FC<AuthProps> = ({ onAuthSuccess }) => {
           placeholder="Password"
           value={password}
           onChange={e => setPassword(e.target.value)}
+          style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
           required
         />
-        <button type="submit">Login</button>
-        {error && <div className="error">{error}</div>}
+        <button 
+          type="submit" 
+          style={{ 
+            padding: '10px 16px', 
+            backgroundColor: '#4CAF50', 
+            color: 'white', 
+            border: 'none', 
+            borderRadius: '4px',
+            cursor: 'pointer',
+            marginTop: '10px',
+            fontSize: '16px'
+          }}
+        >
+          Login
+        </button>
+        {error && <div style={{ color: 'red', marginTop: '10px' }}>{error}</div>}
       </form>
     </div>
   );
